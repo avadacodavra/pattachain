@@ -1,0 +1,53 @@
+# Node
+node_modules/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Runtime data
+pids/
+*.pid
+
+# Build outputs
+dist/
+build/
+coverage/
+artifacts/
+cache/
+typechain/
+out/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+secrets.json
+
+# Hardhat / Truffle / Foundry artifacts
+artifacts/
+cache/
+typechain/
+
+# Misc
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.iml
+.nyc_output/
+.cache/
+
+# Logs and temporary files
+*.log
+logs/
+
+# Packages
+*.tgz
+
+# OS/editor swap files
+*~
+*.swp
+
