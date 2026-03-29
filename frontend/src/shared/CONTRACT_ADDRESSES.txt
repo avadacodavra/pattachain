@@ -1,0 +1,17 @@
+cd E:\pattachain\shared
+New-Item -Path "CONTRACT_ADDRESSES.txt" -ItemType File
+```
+
+**Content:**
+```
+PATTACHAIN CONTRACT ADDRESSES
+==============================
+Network: Polygon Amoy Testnet
+Chain ID: 80002
+RPC URL: https://rpc-amoy.polygon.technology/
+
+CONTRACTS:
+----------
+LandNFT: 0x5FbDB2315678afecb367f032d93F642f64180aa3
+TaxEscrow: 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+LandRegistry: 0x34c543bAaca623d391D0407190DFE680AE068142A
