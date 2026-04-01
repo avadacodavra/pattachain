@@ -1,11 +1,20 @@
 
-// Placeholder for IPFS utility functions
+import { APP_CONFIG } from '@/lib/config';
+
 export const uploadToIPFS = async (file: File): Promise<string> => {
-  // TODO: Implement actual IPFS upload logic (e.g., using Pinata or Web3.Storage)
-  console.log("Uploading file to IPFS:", file.name);
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve("QmPlaceholderHash1234567890abcdef");
-    }, 1000);
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await fetch(`${APP_CONFIG.backendUrl}/api/ipfs/upload-file`, {
+    method: 'POST',
+    body: formData,
   });
+
+  const result = await response.json();
+
+  if (!response.ok || !result.success) {
+    throw new Error(result.message || 'Failed to upload file to IPFS');
+  }
+
+  return result.data.ipfsHash as string;
 };

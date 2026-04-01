@@ -2,6 +2,28 @@ const Land = require('../models/Land');
 const { getLandNFTContract } = require('../utils/web3');
 const { ethers } = require('ethers');
 
+const parseContractEvent = (contract, receipt, eventName) => {
+  const contractAddress = contract.target?.toLowerCase();
+
+  for (const log of receipt.logs ?? []) {
+    if (contractAddress && log.address?.toLowerCase() !== contractAddress) {
+      continue;
+    }
+
+    try {
+      const parsedLog = contract.interface.parseLog(log);
+
+      if (parsedLog?.name === eventName) {
+        return parsedLog;
+      }
+    } catch (error) {
+      // Ignore logs emitted by other contracts or unmatched signatures.
+    }
+  }
+
+  return null;
+};
+
 // Register new land
 const registerLand = async (req, res) => {
   try {
@@ -24,15 +46,12 @@ const registerLand = async (req, res) => {
     console.log('Transaction confirmed:', receipt.hash);
 
     // Extract tokenId from event
-    const event = receipt.logs.find(log => {
-      try {
-        return landNFT.interface.parseLog(log).name === 'LandRegistered';
-      } catch (e) {
-        return false;
-      }
-    });
+    const parsedEvent = parseContractEvent(landNFT, receipt, 'LandRegistered');
 
-    const parsedEvent = landNFT.interface.parseLog(event);
+    if (!parsedEvent) {
+      throw new Error('LandRegistered event not found in transaction receipt');
+    }
+
     const tokenId = Number(parsedEvent.args.tokenId);
 
     // Hash ULPIN

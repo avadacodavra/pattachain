@@ -3,6 +3,28 @@ const Land = require('../models/Land');
 const { getTaxEscrowContract } = require('../utils/web3');
 const { ethers } = require('ethers');
 
+const parseContractEvent = (contract, receipt, eventName) => {
+  const contractAddress = contract.target?.toLowerCase();
+
+  for (const log of receipt.logs ?? []) {
+    if (contractAddress && log.address?.toLowerCase() !== contractAddress) {
+      continue;
+    }
+
+    try {
+      const parsedLog = contract.interface.parseLog(log);
+
+      if (parsedLog?.name === eventName) {
+        return parsedLog;
+      }
+    } catch (error) {
+      // Ignore logs emitted by other contracts or unmatched signatures.
+    }
+  }
+
+  return null;
+};
+
 // Initiate transfer
 const initiateTransfer = async (req, res) => {
   try {
@@ -25,15 +47,12 @@ const initiateTransfer = async (req, res) => {
     const receipt = await tx.wait();
 
     // Extract requestId from event
-    const event = receipt.logs.find(log => {
-      try {
-        return taxEscrow.interface.parseLog(log).name === 'TransferRequested';
-      } catch (e) {
-        return false;
-      }
-    });
+    const parsedEvent = parseContractEvent(taxEscrow, receipt, 'TransferRequested');
 
-    const parsedEvent = taxEscrow.interface.parseLog(event);
+    if (!parsedEvent) {
+      throw new Error('TransferRequested event not found in transaction receipt');
+    }
+
     const requestId = Number(parsedEvent.args.requestId);
 
     // Get seller from land
