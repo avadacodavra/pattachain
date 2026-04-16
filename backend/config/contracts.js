@@ -18,9 +18,9 @@ const CONTRACTS = {
 };
 
 const NETWORK = {
-  chainId: 80002,
-  name: 'Polygon Amoy Testnet',
-  rpcUrl: process.env.POLYGON_AMOY_RPC,
+  chainId: Number(process.env.CHAIN_ID || 80002),
+  name: process.env.NETWORK_NAME || 'Polygon Amoy Testnet',
+  rpcUrl: process.env.RPC_URL || process.env.POLYGON_AMOY_RPC,
 };
 
 module.exports = { CONTRACTS, NETWORK };
