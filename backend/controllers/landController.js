@@ -24,6 +24,22 @@ const parseContractEvent = (contract, receipt, eventName) => {
   return null;
 };
 
+const assertContractDeployed = async (contract, contractName) => {
+  const provider = contract.runner?.provider;
+
+  if (!provider) {
+    throw new Error(`${contractName} provider is not available.`);
+  }
+
+  const code = await provider.getCode(contract.target);
+
+  if (!code || code === '0x') {
+    throw new Error(
+      `${contractName} is not deployed at ${contract.target} on the configured network. Restart the backend if you changed .env, and verify the address matches the live Amoy deployment.`
+    );
+  }
+};
+
 // Register new land
 const registerLand = async (req, res) => {
   try {
@@ -31,6 +47,7 @@ const registerLand = async (req, res) => {
 
     // Get contract
     const landNFT = getLandNFTContract();
+    await assertContractDeployed(landNFT, 'LandNFT');
 
     // Register on blockchain
     const tx = await landNFT.registerLand(
@@ -43,16 +60,26 @@ const registerLand = async (req, res) => {
 
     console.log('Transaction sent:', tx.hash);
     const receipt = await tx.wait();
-    console.log('Transaction confirmed:', receipt.hash);
+    const transactionHash = receipt.hash ?? tx.hash;
+    console.log('Transaction confirmed:', transactionHash);
 
     // Extract tokenId from event
     const parsedEvent = parseContractEvent(landNFT, receipt, 'LandRegistered');
+    let tokenId;
 
-    if (!parsedEvent) {
-      throw new Error('LandRegistered event not found in transaction receipt');
+    if (parsedEvent) {
+      tokenId = Number(parsedEvent.args.tokenId);
+    } else {
+      // Some RPCs return receipts without logs parsed as expected, so fall back
+      // to querying the contract state by ULPIN after the transaction succeeds.
+      try {
+        tokenId = Number(await landNFT.getTokenIdByUlpin(ulpin));
+      } catch (fallbackError) {
+        throw new Error(
+          `Transaction confirmed, but backend could not read the token from ${landNFT.target}. This usually means the request was sent to the wrong address/network or the backend needs a restart after .env changes. Original fallback error: ${fallbackError.shortMessage || fallbackError.message}`
+        );
+      }
     }
-
-    const tokenId = Number(parsedEvent.args.tokenId);
 
     // Hash ULPIN
     const ulpinHash = ethers.keccak256(ethers.toUtf8Bytes(ulpin));
@@ -66,7 +93,7 @@ const registerLand = async (req, res) => {
       ipfsDocumentHash: ipfsHash,
       area,
       location,
-      transactionHash: receipt.hash,
+      transactionHash,
     });
 
     res.status(201).json({
@@ -74,7 +101,7 @@ const registerLand = async (req, res) => {
       message: 'Land registered successfully',
       data: {
         tokenId,
-        transactionHash: receipt.hash,
+        transactionHash,
         land,
       },
     });
